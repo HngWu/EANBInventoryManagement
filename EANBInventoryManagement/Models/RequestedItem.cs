@@ -17,5 +17,7 @@ public partial class RequestedItem
 
     public DateTime? EndDate { get; set; }
 
+    public bool? IsFulfilled { get; set; }
+
     public virtual Event Event { get; set; } = null!;
 }

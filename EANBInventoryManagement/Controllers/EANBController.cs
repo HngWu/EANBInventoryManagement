@@ -11,7 +11,7 @@ namespace EANBInventoryManagement.Controllers
     [ApiController]
     public class EANBController : Controller
     {
-        public static string salt= "JK3i6kig";
+        public static string salt = "JK3i6kig";
 
 
         EanbinventoryManagementContext context = new EanbinventoryManagementContext();
@@ -22,7 +22,7 @@ namespace EANBInventoryManagement.Controllers
         }
 
 
-        
+
 
         // Method to hash the password with the salt
         public static string HashPassword(string password, string salt)
@@ -46,12 +46,26 @@ namespace EANBInventoryManagement.Controllers
             }
         }
 
-        [HttpGet("Events")]
-        public IActionResult GetEvents()
+        [HttpGet("Events/{userId}")]
+        public IActionResult GetEvents(int userId)
         {
             try
             {
-                var events = context.Events.ToList();
+                var events = context.Events
+                    .Select(x => new
+                    {
+                        x.EventId,
+                        x.UserId,
+                        x.Name,
+                        x.Location,
+                        x.Start,
+                        x.End,
+                        Time = x.End - x.Start,
+                        x.RequestedItems,
+                       
+                    })
+                    .Where(x=>x.UserId == userId)
+                    .OrderBy(x => x.Start).ToList();
                 return Ok(events);
             }
             catch (Exception ex)
@@ -61,6 +75,52 @@ namespace EANBInventoryManagement.Controllers
             }
 
         }
+
+        [HttpPost("Offers/accept/{requestId}")]
+        public IActionResult AcceptOffer(int requestId, [FromBody] int offerId)
+        {
+            try
+            {
+                var offer = context.Offers.FirstOrDefault(o => o.OfferId == offerId);
+                offer.RequestUserId = requestId;
+                context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception)
+            {
+
+                return BadRequest("Unable to accept the offer");
+            }
+
+        }
+
+
+        [HttpGet("Offers/{requestId}")]
+        public IActionResult GetOffersForRequest(int requestId, string filter)
+        {
+            try
+            {
+                var offers = context.Offers
+                    .Where(o => o.RequestUserId == null
+                                           && (string.IsNullOrEmpty(filter) || o.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+                return Ok(offers);
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(499, ex.Message); // Indicate failure due to an exception
+            }
+
+        }
+
+        [HttpGet("request/{requestId}/reservation")]
+        public IActionResult GetRequestedItems(int requestId)
+        {
+            var items = context.RequestedItems.ToList();
+            return Ok(items);
+        }
+
 
         // GET: EANBController
         [HttpPost("Login")]
@@ -75,7 +135,7 @@ namespace EANBInventoryManagement.Controllers
                 if (user != null)
                 {
                     var hashedPassword = HashPassword(password, salt);
-                    if (string.Compare(hashedPassword,(user.PasswordHash)) == 0)
+                    if (string.Compare(hashedPassword, (user.PasswordHash)) == 0)
                     {
                         return Ok(user);
 
