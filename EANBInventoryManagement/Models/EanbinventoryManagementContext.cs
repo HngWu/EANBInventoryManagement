@@ -107,6 +107,7 @@ public partial class EanbinventoryManagementContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("endDate");
             entity.Property(e => e.EventId).HasColumnName("event_id");
+            entity.Property(e => e.IsFulfilled).HasColumnName("isFulfilled");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false)

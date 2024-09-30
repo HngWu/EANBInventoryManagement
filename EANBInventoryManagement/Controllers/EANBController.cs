@@ -11,7 +11,7 @@ namespace EANBInventoryManagement.Controllers
     [ApiController]
     public class EANBController : Controller
     {
-        public static string salt= "JK3i6kig";
+        public static string salt = "JK3i6kig";
 
 
         EanbinventoryManagementContext context = new EanbinventoryManagementContext();
@@ -22,7 +22,7 @@ namespace EANBInventoryManagement.Controllers
         }
 
 
-        
+
 
         // Method to hash the password with the salt
         public static string HashPassword(string password, string salt)
@@ -46,22 +46,26 @@ namespace EANBInventoryManagement.Controllers
             }
         }
 
-        [HttpGet("Events")]
-        public IActionResult GetEvents()
+        [HttpGet("Events/{userId}")]
+        public IActionResult GetEvents(int userId)
         {
             try
             {
                 var events = context.Events
-                    .Select(x=> new
+                    .Select(x => new
                     {
+                        x.EventId,
+                        x.UserId,
                         x.Name,
                         x.Location,
                         x.Start,
                         x.End,
                         Time = x.End - x.Start,
-                        x.RequestedItems
+                        x.RequestedItems,
+                       
                     })
-                    .OrderBy(x=>x.Start).ToList();
+                    .Where(x=>x.UserId == userId)
+                    .OrderBy(x => x.Start).ToList();
                 return Ok(events);
             }
             catch (Exception ex)
@@ -131,7 +135,7 @@ namespace EANBInventoryManagement.Controllers
                 if (user != null)
                 {
                     var hashedPassword = HashPassword(password, salt);
-                    if (string.Compare(hashedPassword,(user.PasswordHash)) == 0)
+                    if (string.Compare(hashedPassword, (user.PasswordHash)) == 0)
                     {
                         return Ok(user);
 
