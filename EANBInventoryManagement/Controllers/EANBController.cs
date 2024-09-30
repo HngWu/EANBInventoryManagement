@@ -64,7 +64,7 @@ namespace EANBInventoryManagement.Controllers
                         x.RequestedItems,
                        
                     })
-                    .Where(x=>x.UserId == userId)
+                    .Where(x=>x.UserId == userId && x.End > DateTime.Now)
                     .OrderBy(x => x.Start).ToList();
                 return Ok(events);
             }
@@ -76,26 +76,7 @@ namespace EANBInventoryManagement.Controllers
 
         }
 
-        [HttpPost("Offers/accept/{requestId}")]
-        public IActionResult AcceptOffer(int requestId, [FromBody] int offerId)
-        {
-            try
-            {
-                var offer = context.Offers.FirstOrDefault(o => o.OfferId == offerId);
-                offer.RequestUserId = requestId;
-                context.SaveChanges();
-                return Ok();
-            }
-            catch (Exception)
-            {
-
-                return BadRequest("Unable to accept the offer");
-            }
-
-        }
-
-
-        [HttpGet("Offers/{requestId}")]
+        [HttpGet("Offers")]
         public IActionResult GetOffersForRequest(int requestId, string filter)
         {
             try
@@ -114,6 +95,34 @@ namespace EANBInventoryManagement.Controllers
 
         }
 
+
+        [HttpPost("Offers/accept/{requestItemId}")]
+        public IActionResult AcceptOffer(int requestItemId, [FromBody] int offerId)
+        {
+            try
+            {
+                var requestItem = context.RequestedItems.FirstOrDefault(r => r.RequestedItemId == requestItemId);
+                var offer = context.Offers.FirstOrDefault(o => o.OfferId == offerId);
+
+                //if(int.Parse(offer.Amount) > requestItem.Amount &&(offer.StartDate < requestItem.StartDate))
+                //{
+
+                //}
+                //TODO : Check for date
+                offer.RequestUserId = requestItemId;
+                context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception)
+            {
+
+                return BadRequest("Unable to accept the offer");
+            }
+
+        }
+
+
+        
         [HttpGet("request/{requestId}/reservation")]
         public IActionResult GetRequestedItems(int requestId)
         {
