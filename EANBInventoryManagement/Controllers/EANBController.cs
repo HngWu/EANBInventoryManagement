@@ -51,7 +51,17 @@ namespace EANBInventoryManagement.Controllers
         {
             try
             {
-                var events = context.Events.ToList();
+                var events = context.Events
+                    .Select(x=> new
+                    {
+                        x.Name,
+                        x.Location,
+                        x.Start,
+                        x.End,
+                        Time = x.End - x.Start,
+                        x.RequestedItems
+                    })
+                    .OrderBy(x=>x.Start).ToList();
                 return Ok(events);
             }
             catch (Exception ex)
@@ -61,6 +71,52 @@ namespace EANBInventoryManagement.Controllers
             }
 
         }
+
+        [HttpPost("Offers/accept/{requestId}")]
+        public IActionResult AcceptOffer(int requestId, [FromBody] int offerId)
+        {
+            try
+            {
+                var offer = context.Offers.FirstOrDefault(o => o.OfferId == offerId);
+                offer.RequestUserId = requestId;
+                context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception)
+            {
+
+                return BadRequest("Unable to accept the offer");
+            }
+
+        }
+
+
+        [HttpGet("Offers/{requestId}")]
+        public IActionResult GetOffersForRequest(int requestId, string filter)
+        {
+            try
+            {
+                var offers = context.Offers
+                    .Where(o => o.RequestUserId == null
+                                           && (string.IsNullOrEmpty(filter) || o.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+                return Ok(offers);
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(499, ex.Message); // Indicate failure due to an exception
+            }
+
+        }
+
+        [HttpGet("request/{requestId}/reservation")]
+        public IActionResult GetRequestedItems(int requestId)
+        {
+            var items = context.RequestedItems.ToList();
+            return Ok(items);
+        }
+
 
         // GET: EANBController
         [HttpPost("Login")]
