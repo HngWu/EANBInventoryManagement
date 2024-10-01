@@ -82,6 +82,7 @@ public partial class EanbinventoryManagementContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.OfferUserId).HasColumnName("offerUserId");
             entity.Property(e => e.RequestUserId).HasColumnName("RequestUserID");
+            entity.Property(e => e.RequestedItemId).HasColumnName("requestedItemId");
             entity.Property(e => e.StartDate).HasColumnName("startDate");
             entity.Property(e => e.State)
                 .HasMaxLength(50)

@@ -21,8 +21,13 @@ namespace EANBInventoryManagement.Controllers
             public string password { get; set; }
         }
 
+        public class acceptOffer
+        {
+            public int offerId { get; set; }
+            public int requestedItemId { get; set; }
+            public int userId { get; set; }
 
-
+        }
 
         // Method to hash the password with the salt
         public static string HashPassword(string password, string salt)
@@ -64,7 +69,7 @@ namespace EANBInventoryManagement.Controllers
                         x.RequestedItems,
                        
                     })
-                    .Where(x=>x.UserId == userId && x.End > DateTime.Now)
+                    .Where(x=>x.UserId == userId) // && x.End > DateTime.Now
                     .OrderBy(x => x.Start).ToList();
                 return Ok(events);
             }
@@ -76,40 +81,57 @@ namespace EANBInventoryManagement.Controllers
 
         }
 
-        [HttpGet("Offers")]
-        public IActionResult GetOffersForRequest(int requestId, string filter)
+        [HttpGet("Offers/{filter?}")]
+        public IActionResult GetOffersForRequest(string filter = "")
         {
             try
             {
                 var offers = context.Offers
-                    .Where(o => o.RequestUserId == null
-                                           && (string.IsNullOrEmpty(filter) || o.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    .Where(o =>  (string.IsNullOrEmpty(filter) || o.Name.Contains(filter))) //o.RequestUserId == null
                     .ToList();
                 return Ok(offers);
             }
             catch (Exception ex)
             {
-
-                return StatusCode(499, ex.Message); // Indicate failure due to an exception
+                return StatusCode(500, ex.Message); // Indicate failure due to an exception
             }
-
         }
 
 
-        [HttpPost("Offers/accept/{requestItemId}")]
-        public IActionResult AcceptOffer(int requestItemId, [FromBody] int offerId)
+        [HttpGet("Offers/Request/{requestedItemId}")]
+        public IActionResult GetOffersForRequest(int requestedItemId)
         {
             try
             {
-                var requestItem = context.RequestedItems.FirstOrDefault(r => r.RequestedItemId == requestItemId);
-                var offer = context.Offers.FirstOrDefault(o => o.OfferId == offerId);
+                var offers = context.Offers
+                    .Where(o => o.RequestedItemId == requestedItemId) //o.RequestUserId == null
+                    .FirstOrDefault();
+                return Ok(offers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); // Indicate failure due to an exception
+            }
+        }
+
+
+        [HttpPost("Offers/Reserve")]
+        public IActionResult ReserveOffer(acceptOffer acceptOffer)
+        {
+            try
+            {
+                var requestItem = context.RequestedItems.FirstOrDefault(r => r.RequestedItemId == acceptOffer.requestedItemId);
+                var offer = context.Offers.FirstOrDefault(o => o.OfferId == acceptOffer.offerId);
 
                 //if(int.Parse(offer.Amount) > requestItem.Amount &&(offer.StartDate < requestItem.StartDate))
                 //{
 
                 //}
                 //TODO : Check for date
-                offer.RequestUserId = requestItemId;
+                offer.RequestUserId = acceptOffer.userId;
+                offer.RequestedItemId = acceptOffer.requestedItemId;
+                offer.State = "reserved";
+                requestItem.IsFulfilled = true;
                 context.SaveChanges();
                 return Ok();
             }
@@ -123,10 +145,12 @@ namespace EANBInventoryManagement.Controllers
 
 
         
-        [HttpGet("request/{requestId}/reservation")]
-        public IActionResult GetRequestedItems(int requestId)
+        [HttpGet("RequestedItems/{userId}")]
+        public IActionResult GetRequestedItems(int userId)
         {
-            var items = context.RequestedItems.ToList();
+            var eventsIdlist = context.Events.Where(x=>x.UserId !=  userId).Select(x=>x.EventId).ToList();
+            var items = context.RequestedItems
+                .Where(x=>!eventsIdlist.Contains(x.EventId)).ToList();
             return Ok(items);
         }
 

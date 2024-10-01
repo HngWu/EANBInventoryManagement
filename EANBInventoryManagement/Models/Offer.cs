@@ -21,6 +21,8 @@ public partial class Offer
 
     public DateOnly? EndDate { get; set; }
 
+    public int? RequestedItemId { get; set; }
+
     public virtual User OfferUser { get; set; } = null!;
 
     public virtual User? RequestUser { get; set; }
