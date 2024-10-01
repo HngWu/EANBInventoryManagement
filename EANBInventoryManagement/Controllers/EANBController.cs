@@ -105,6 +105,18 @@ namespace EANBInventoryManagement.Controllers
             {
                 var offers = context.Offers
                     .Where(o => o.RequestedItemId == requestedItemId) //o.RequestUserId == null
+                    .Select(selector: o => new
+                    {
+                        o.OfferId,
+                        o.Name,
+                        o.Amount,
+                        o.StartDate,
+                        o.EndDate,
+                        o.RequestUserId,
+                        o.RequestedItemId,
+                        o.State,
+                        o.OfferUser.Username,
+                    })
                     .FirstOrDefault();
                 return Ok(offers);
             }
